@@ -8,7 +8,8 @@ PROCESSED_DIR = os.path.join(DATA_DIR, "processed")
 
 EVENTS_PATH = os.path.join(RAW_DIR, "events.csv")
 CATEGORY_TREE_PATH = os.path.join(RAW_DIR, "category_tree.csv")
-ITEM_PROPERTIES_PATH = os.path.join(RAW_DIR, "item_properties.csv")
+ITEM_PROPERTIES_PATH_1 = os.path.join(RAW_DIR, "item_properties_part1.csv")
+ITEM_PROPERTIES_PATH_2 = os.path.join(RAW_DIR, "item_properties_part2.csv")
 
 ARTIFACTS_DIR = os.path.join(BASE_DIR, "artifacts")
 MODELS_DIR = os.path.join(ARTIFACTS_DIR, "models")
