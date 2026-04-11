@@ -1,0 +1,33 @@
+{
+    "study_name": "amazon_two_stage_ranker_ndcg10",
+    "direction": "MAXIMIZE",
+    "n_trials": 50,
+    "best_value": 0.27114959018989326,
+    "best_params": {
+        "n_estimators": 1096,
+        "learning_rate": 0.007785461956045453,
+        "num_leaves": 52,
+        "max_depth": 8,
+        "min_child_samples": 290,
+        "subsample": 0.6103846543843039,
+        "subsample_freq": 7,
+        "colsample_bytree": 0.8631449093321001,
+        "reg_alpha": 1.784621054133047e-05,
+        "reg_lambda": 2.427364384060346e-05,
+        "min_split_gain": 0.002180419633900643
+    },
+    "best_trial_number": 47,
+    "best_trial_user_attrs": {
+        "best_iteration": 51,
+        "Recall@10": 0.3101512255860082,
+        "MAP@10": 0.24054643596569064,
+        "NDCG@10": 0.27114959018989326,
+        "HitRate@10": 0.40993788819875776
+    },
+    "final_metrics": {
+        "Recall@10": 0.3101512255860082,
+        "MAP@10": 0.24054643596569064,
+        "NDCG@10": 0.27114959018989326,
+        "HitRate@10": 0.40993788819875776
+    }
+}
