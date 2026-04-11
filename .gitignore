@@ -7,6 +7,15 @@ recommendations/
 *.pkl
 *bin
 *.code-workspace
+*.pkl
+*.joblib
+*.parquet
+*.csv
+data/
+artifacts/
+models/
+__pycache__/
+.ipynb_checkpoints/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
