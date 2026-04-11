@@ -1,8 +1,11 @@
 recsys/
-models/
+# MLflow
+mlruns/
+mlflow.db
 data/
 recommendations/
 *.pkl
+*bin
 *.code-workspace
 
 # Byte-compiled / optimized / DLL files
