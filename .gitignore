@@ -175,3 +175,5 @@ cython_debug/
 # project environment
 .venv/
 .DS_Store
+mlflow/mlruns/
+mlflow/mlflow.db
