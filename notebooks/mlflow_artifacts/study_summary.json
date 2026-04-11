@@ -1,0 +1,26 @@
+{
+    "study_name": "amazon_ranker_lgbm_ap",
+    "direction": "MAXIMIZE",
+    "n_trials": 50,
+    "best_value": 0.03553259961100908,
+    "best_params": {
+        "n_estimators": 468,
+        "learning_rate": 0.007870764905345117,
+        "num_leaves": 33,
+        "max_depth": 3,
+        "min_child_samples": 169,
+        "subsample": 0.7578150693650701,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.6232973336785386,
+        "reg_alpha": 9.927347805520157e-05,
+        "reg_lambda": 0.21467859437388187,
+        "min_split_gain": 0.37662771191331396
+    },
+    "best_trial_number": 46,
+    "best_trial_user_attrs": {
+        "best_iteration": 39,
+        "valid_roc_auc": 0.9426135529273556
+    },
+    "final_valid_ap": 0.03553259961100908,
+    "final_valid_roc_auc": 0.9426135529273556
+}
