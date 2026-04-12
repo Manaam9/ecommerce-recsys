@@ -449,11 +449,11 @@ GET /metrics
 
 ```mermaid
 flowchart LR
-    A[FastAPI API] --> B[/metrics]
-    C[Retraining Pipeline] --> D[Pushgateway / Metrics Export]
+    A[FastAPI API] --> B[Metrics Endpoint]
+    C[Retraining Pipeline] --> D[Metrics Exporter]
     B --> E[Prometheus]
     D --> E
-    E --> F[Dashboards / Alerts]
+    E --> F[Dashboards and Alerts]
 ```
 
 ---
