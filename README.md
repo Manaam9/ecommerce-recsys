@@ -2,18 +2,40 @@
 
 ## Описание проекта
 
-Цель проекта — построить рекомендательную систему для интернет-магазина, которая предсказывает, какие товары следует рекомендовать пользователю.
+Цель проекта — построить production-ready рекомендательную систему для интернет-магазина, которая предсказывает наиболее релевантные товары для пользователя.
 
-Проект охватывает полный ML-цикл:
+Проект покрывает полный ML lifecycle:
 
 * исследование данных;
-* подготовку признаков;
-* построение и сравнение моделей;
+* feature engineering;
+* обучение и сравнение моделей;
+* hyperparameter tuning;
 * логирование экспериментов;
-* развёртывание модели в виде API-сервиса;
-* контейнеризацию;
-* пайплайн переобучения;
-* мониторинг.
+* деплой API-сервиса;
+* контейнеризация;
+* автоматическое переобучение;
+* мониторинг;
+* документация и сопровождение.
+
+---
+
+## Архитектура системы
+
+```mermaid
+flowchart LR
+    A[Исторические события] --> B[Предобработка данных]
+    B --> C[Feature Engineering]
+    B --> D[ALS Candidate Retrieval]
+    C --> E[User Features]
+    C --> F[Item Features]
+    C --> G[User-Item Features]
+    D --> H[Candidate Pool]
+    E --> I[LightGBM Ranker]
+    F --> I
+    G --> I
+    H --> I
+    I --> J[Top-K Recommendations]
+````
 
 ---
 
@@ -21,31 +43,37 @@
 
 Используются три таблицы:
 
-### 1. `category_tree.csv`
+### `category_tree.csv`
 
-Содержит иерархию категорий:
+Содержит иерархию категорий товаров:
 
-* `parentid` — родительская категория;
-* `categoryid` — дочерняя категория.
+* `parentid` — родительская категория
+* `categoryid` — дочерняя категория
 
-### 2. `events.csv`
+### `events.csv`
 
-Лог пользовательских событий:
+История пользовательских событий:
 
-* `timestamp` — время события;
-* `visitorid` — идентификатор пользователя;
-* `event` — тип события (`view`, `addtocart`, `transaction`);
-* `itemid` — идентификатор товара;
-* `transactionid` — идентификатор транзакции.
+* `timestamp`
+* `visitorid`
+* `event`
+* `itemid`
+* `transactionid`
 
-### 3. `item_properties.csv`
+Типы событий:
 
-История свойств товаров:
+* `view`
+* `addtocart`
+* `transaction`
 
-* `timestamp` — время изменения свойства;
-* `itemid` — идентификатор товара;
-* `property` — название свойства;
-* `value` — значение свойства.
+### `item_properties.csv`
+
+История изменения свойств товаров:
+
+* `timestamp`
+* `itemid`
+* `property`
+* `value`
 
 ---
 
@@ -61,20 +89,18 @@
 
 Дополнительные сигналы:
 
-* `transaction` как сильный позитивный сигнал;
-* `view` как слабый сигнал интереса.
+* `transaction` — сильный позитивный сигнал
+* `view` — слабый позитивный сигнал
 
-Также купленные товары исключаются из рекомендаций.
+Также из рекомендаций исключаются уже купленные товары.
 
 ---
 
 ## Метрики
 
-### Оффлайн-метрики
+### Offline Ranking Metrics
 
-Для оценки качества рекомендаций используются:
-
-* Recall@K (основная)
+* Recall@K
 * Precision@K
 * MAP@K
 * NDCG@K
@@ -82,7 +108,7 @@
 
 Основная метрика:
 
-* Recall@10
+* **Recall@10**
 
 Дополнительные:
 
@@ -91,59 +117,18 @@
 
 ---
 
-### Бизнес-метрики
+### Business Metrics
 
 * CTR рекомендаций
-* Add-to-cart rate
-* Conversion to purchase
-* GMV uplift
-
----
-
-## Трансляция задачи
-
-### Формулировка
-
-Задача решается как **learning-to-rank**:
-
-> необходимо упорядочить товары так, чтобы наиболее релевантные находились в топе рекомендаций.
-
----
-
-### Обоснование метрик
-
-С учётом EDA:
-
-* высокая разреженность
-* дисбаланс классов
-* implicit feedback
-* важность top-K
-
-классические метрики (accuracy, F1) не применимы.
-
-Используются:
-
-* Recall@K
-* NDCG@K
-* MAP@K
-* HitRate@K
-
----
-
-### Связь с бизнесом
-
-* Recall → покрытие рекомендаций
-* NDCG → UX
-* MAP → качество ранжирования
-
-Финальная цель:
-
-* рост Conversion Rate
-* рост Revenue
+* Add-to-Cart Rate
+* Conversion to Purchase
+* GMV Uplift
 
 ---
 
 ## Подход к решению
+
+Задача решается как **Learning-to-Rank**.
 
 Используется двухэтапная архитектура:
 
@@ -153,43 +138,66 @@ Candidate Generation → Ranking
 
 ---
 
-### 1. Candidate Generation
+## Candidate Generation
+
+Используются retrieval-модели:
 
 * Top Popular
 * ALS
-* item-to-item
-* recently popular
-* category-based
+* Item-to-Item
+* Recently Popular
+* Category-Based
 
 ---
 
-### 2. Ranking
+## Ranking
 
-Модель:
+Используется модель:
 
-* LightGBM / CatBoost / XGBoost
+* **LightGBM Ranker**
 
 Признаки:
 
-* user behavior
-* item popularity
-* interaction history
-* time features
+* user behavior features
+* item popularity features
+* user-item interaction features
+* time/context features
+* ALS score
 
 ---
 
-## Исследование данных (EDA)
+## Inference Pipeline
 
-Ключевые выводы:
+```mermaid
+flowchart TD
+    A[User ID] --> B[ALS Candidate Retrieval]
+    B --> C[Candidate Items]
+    C --> D[Feature Builder]
+    D --> E[User Features]
+    D --> F[Item Features]
+    D --> G[User-Item Features]
+    E --> H[LightGBM Ranker]
+    F --> H
+    G --> H
+    C --> H
+    H --> I[Top-K Recommendations]
+    I --> J[API Response JSON]
+```
 
-* сильная разреженность
+---
+
+## EDA
+
+Основные выводы:
+
+* высокая разреженность interaction matrix
 * выраженный cold-start
-* long-tail пользователей и товаров
-* addtocart — сильный сигнал
-* вечер — пик конверсий
-* item properties — богатый источник признаков
+* long-tail распределение пользователей и товаров
+* `addtocart` — наиболее сильный proxy target
+* вечер — пик пользовательской активности
+* свойства товаров дают значимый прирост качества
 
-Результат:
+Результат анализа:
 
 * `notebooks/01_eda.ipynb`
 
@@ -197,22 +205,62 @@ Candidate Generation → Ranking
 
 ## Эксперименты
 
-Сравниваются:
+Сравниваются модели:
 
 * Top Popular
 * ALS
-* Hybrid модель
+* Two-Stage Hybrid Model
 
-Результат:
+Результаты:
 
 * `notebooks/02_modeling.ipynb`
-* модели в `models/`
+
+---
+
+## Ablation Study
+
+| Model                    | Recall@10 |
+| ------------------------ | --------- |
+| ALS Only                 | baseline  |
+| Ranker without ALS score | improved  |
+| Ranker with ALS score    | best      |
+
+Вывод:
+
+> ALS score является важным дополнительным ranking-сигналом.
+
+---
+
+## Offline Training Pipeline
+
+```mermaid
+flowchart TD
+    A[events.csv] --> B[Предобработка]
+    B --> C[Temporal Split]
+    C --> D[Train Events]
+    C --> E[Validation Events]
+
+    D --> F[ALS Training]
+    F --> G[ALS Candidate Generation]
+
+    D --> H[Feature Engineering]
+    E --> I[Validation Target]
+
+    G --> J[Ranker Dataset]
+    H --> J
+    I --> J
+
+    J --> K[LightGBM Ranker Training]
+    K --> L[Offline Evaluation]
+    L --> M[MLflow Logging]
+    K --> N[Model Artifacts]
+```
 
 ---
 
 ## MLflow
 
-### Запуск
+### Запуск сервера
 
 ```bash
 mlflow server \
@@ -224,25 +272,188 @@ mlflow server \
 
 ---
 
-### Использование
-
-Логируются:
+### Логируются
 
 * параметры моделей
-* метрики (Recall@K, MAP@K, NDCG@K)
-* модели
+* offline-метрики
+* Optuna trials
 * feature importance
+* артефакты моделей
 
 ---
 
-### Хранение артефактов
+## API Service
 
-⚠️ Не добавляются в git:
+Рекомендательная система развёрнута как FastAPI REST сервис.
+
+---
+
+### Endpoints
+
+#### Healthcheck
+
+```http
+GET /health
+```
+
+---
+
+#### Recommendations
+
+```http
+POST /recommend
+```
+
+Request:
+
+```json
+{
+  "user_id": 257597,
+  "top_k": 10,
+  "n_candidates": 100
+}
+```
+
+Response:
+
+```json
+{
+  "user_id": 257597,
+  "recommendations": [
+    {
+      "item_id": 3574,
+      "score": 0.913,
+      "als_score": 0.184,
+      "categoryid": 1173
+    }
+  ]
+}
+```
+
+---
+
+### Swagger
+
+```text
+http://localhost:8000/docs
+```
+
+---
+
+## API Deployment Architecture
+
+```mermaid
+flowchart LR
+    A[Client / Frontend] --> B[FastAPI Service]
+    B --> C[ALS Model]
+    B --> D[LightGBM Ranker]
+    B --> E[Inference Assets]
+    C --> F[Candidate Generation]
+    E --> G[Feature Joining]
+    D --> H[Reranking]
+    F --> H
+    G --> H
+    H --> I[Recommendations Response]
+```
+
+---
+
+## Docker
+
+### Build
 
 ```bash
-mlflow.db
-mlruns/
-mlartifacts/
+docker build -t ecommerce-recsys .
+```
+
+### Run
+
+```bash
+docker run -p 8000:8000 ecommerce-recsys
+```
+
+---
+
+## Airflow Retraining Pipeline
+
+Реализован автоматический DAG переобучения модели.
+
+---
+
+### DAG Stages
+
+1. Загрузка данных
+2. Предобработка
+3. Обучение ALS
+4. Генерация candidate pool
+5. Обучение Ranker
+6. Offline evaluation
+7. Сохранение артефактов
+
+---
+
+### DAG Visualization
+
+```mermaid
+flowchart TD
+    A[check_project_structure] --> B[preprocess_data]
+    B --> C[train_als]
+    C --> D[generate_candidates]
+    D --> E[train_ranker]
+    E --> F[evaluate_model]
+    F --> G[save_artifacts]
+```
+
+---
+
+### Schedule
+
+* Weekly retraining
+
+---
+
+## Monitoring
+
+Реализован мониторинг inference и retraining pipeline.
+
+---
+
+### API Metrics
+
+* `http_requests_total`
+* `http_request_latency_seconds`
+* `recommend_requests_total`
+* `recommend_request_latency_seconds`
+* `recommendations_returned_total`
+* `inference_errors_total`
+
+---
+
+### Retraining Metrics
+
+* `retrain_runs_total`
+* `retrain_failures_total`
+* `retrain_duration_seconds`
+
+---
+
+### Metrics Endpoint
+
+```http
+GET /metrics
+```
+
+---
+
+## Monitoring Architecture
+
+```mermaid
+flowchart LR
+    A[FastAPI API] --> B[/metrics]
+    C[Retraining Pipeline] --> D[Pushgateway / Metrics Export]
+    B --> E[Prometheus]
+    D --> E
+    E --> F[Dashboards / Alerts]
 ```
 
 ---
@@ -252,21 +463,32 @@ mlartifacts/
 ```text
 ecommerce-recsys/
 ├── README.md
+├── MONITORING.md
 ├── requirements.txt
+├── requirements-api.txt
+├── Dockerfile
 ├── notebooks/
 │   ├── 01_eda.ipynb
 │   └── 02_modeling.ipynb
 ├── data/
+│   └── processed/
 ├── models/
+│   ├── als_model.bin
+│   ├── lgbm_ranker.bin
+│   └── inference_assets.pkl
 ├── scripts/
-├── docker/
+│   └── train_recommender_pipeline.py
 ├── airflow/
-└── src/
+│   └── dags/
+│       └── retrain_recsys.py
+├── src/
+│   ├── api/
+│   └── inference/
 ```
 
 ---
 
-## Запуск
+## Локальный запуск
 
 ```bash
 git clone <repo_url>
@@ -279,47 +501,80 @@ pip install -r requirements.txt
 
 ---
 
-## API
+## Запуск API
 
 ```bash
-uvicorn src.api.app:app --host 0.0.0.0 --port 8000
+uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ---
 
-## Docker
+## Полный Retraining вручную
 
 ```bash
-docker build -t ecommerce-recsys .
-docker run -p 8000:8000 ecommerce-recsys
+python scripts/train_recommender_pipeline.py --stage preprocess
+python scripts/train_recommender_pipeline.py --stage train_als
+python scripts/train_recommender_pipeline.py --stage generate_candidates
+python scripts/train_recommender_pipeline.py --stage train_ranker
+python scripts/train_recommender_pipeline.py --stage evaluate
+python scripts/train_recommender_pipeline.py --stage save_artifacts
 ```
 
 ---
 
-## Airflow
+## Используемый стек
 
-* DAG: `airflow/dags/retrain_recsys.py`
-
----
-
-## Мониторинг
-
-* latency
-* error rate
-* coverage
-* drift
-* offline-метрики
+* Python
+* Pandas / Polars / NumPy
+* Implicit ALS
+* LightGBM
+* FastAPI
+* Docker
+* Airflow
+* Prometheus
+* MLflow
+* Optuna
 
 ---
 
 ## Итог
 
-Данные:
+Особенности данных:
 
-* sparse
-* long-tail
+* высокая разреженность
 * cold-start
+* long-tail распределение
 
-Решение:
-👉 гибридная рекомендательная система (ALS + ranking)
+Итоговое решение:
 
+> **Production-ready двухэтапная рекомендательная система**
+>
+> **ALS Candidate Retrieval + LightGBM Ranker Reranking**
+
+---
+
+## Full ML Lifecycle
+
+```mermaid
+flowchart TD
+    A[EDA] --> B[Feature Engineering]
+    B --> C[Model Training]
+    C --> D[Hyperparameter Tuning]
+    D --> E[Offline Evaluation]
+    E --> F[MLflow Logging]
+    F --> G[API Deployment]
+    G --> H[Dockerization]
+    H --> I[Airflow Retraining]
+    I --> J[Monitoring]
+```
+
+---
+
+## Автор
+
+**Andrej Moldovan**
+
+Рекомендации товаров в электронной коммерции
+
+```
+```
