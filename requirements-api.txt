@@ -11,3 +11,4 @@ pydantic
 python-dotenv
 joblib
 pyarrow
+prometheus-client
