@@ -12,7 +12,7 @@ ITEM_PROPERTIES_PATH_1 = os.path.join(RAW_DIR, "item_properties_part1.csv")
 ITEM_PROPERTIES_PATH_2 = os.path.join(RAW_DIR, "item_properties_part2.csv")
 
 ARTIFACTS_DIR = os.path.join(BASE_DIR, "artifacts")
-MODELS_DIR = os.path.join(ARTIFACTS_DIR, "models")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
 
 # mlflow
 MLFLOW_BASE_DIR = os.path.join(BASE_DIR, "mlflow")
