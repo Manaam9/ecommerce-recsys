@@ -2,32 +2,32 @@
     "study_name": "amazon_two_stage_ranker_ndcg10",
     "direction": "MAXIMIZE",
     "n_trials": 50,
-    "best_value": 0.2794365322117877,
+    "best_value": 0.2741500593156174,
     "best_params": {
-        "n_estimators": 285,
-        "learning_rate": 0.0012863499499178993,
-        "num_leaves": 86,
-        "max_depth": 12,
-        "min_child_samples": 46,
-        "subsample": 0.7682387155125915,
-        "subsample_freq": 5,
-        "colsample_bytree": 0.8446093188651126,
-        "reg_alpha": 8.077295654419593e-05,
-        "reg_lambda": 0.00014862277634724149,
-        "min_split_gain": 0.08222893955373459
+        "n_estimators": 1032,
+        "learning_rate": 0.004599392542131475,
+        "num_leaves": 126,
+        "max_depth": 5,
+        "min_child_samples": 262,
+        "subsample": 0.7194616503509877,
+        "subsample_freq": 3,
+        "colsample_bytree": 0.8497112686294621,
+        "reg_alpha": 0.05071317573977477,
+        "reg_lambda": 0.00018134845583378352,
+        "min_split_gain": 0.002256010218671514
     },
-    "best_trial_number": 26,
+    "best_trial_number": 49,
     "best_trial_user_attrs": {
-        "best_iteration": 64,
-        "Recall@10": 0.31492140014247605,
-        "MAP@10": 0.24855935127674259,
-        "NDCG@10": 0.2794365322117877,
-        "HitRate@10": 0.422360248447205
+        "best_iteration": 19,
+        "Recall@10": 0.3018826273210945,
+        "MAP@10": 0.2444776364652141,
+        "NDCG@10": 0.2741500593156174,
+        "HitRate@10": 0.40993788819875776
     },
     "final_metrics": {
-        "Recall@10": 0.31492140014247605,
-        "MAP@10": 0.24855935127674259,
-        "NDCG@10": 0.2794365322117877,
-        "HitRate@10": 0.422360248447205
+        "Recall@10": 0.3018826273210945,
+        "MAP@10": 0.2444776364652141,
+        "NDCG@10": 0.2741500593156174,
+        "HitRate@10": 0.40993788819875776
     }
 }
