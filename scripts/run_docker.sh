@@ -4,7 +4,7 @@ set -e
 
 IMAGE_NAME="ecommerce-recsys-api"
 CONTAINER_NAME="ecommerce-recsys-container"
-PORT=8000
+PORT=8001
 
 echo "Stopping old container if exists..."
 docker stop $CONTAINER_NAME >/dev/null 2>&1 || true

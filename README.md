@@ -35,7 +35,35 @@ flowchart LR
     G --> I
     H --> I
     I --> J[Top-K Recommendations]
-````
+```
+
+---
+
+## Архитектура персонализированной оболочки с ИИ-ассистентом
+
+```mermaid
+flowchart TD
+    U[Пользователь] --> LM[LM Studio — Gemma 4 E4B]
+    LM -->|tool call: recommend| MCP[MCP-сервер smart-search]
+    LM -->|tool call: duckduckgo_search| MCP
+    MCP -->|domain=ecommerce| RS[РС маркетплейса\nlocalhost:8001]
+    MCP -->|domain=music| RSM[РС музыки\nlocalhost:8003]
+    MCP -->|domain=finance| RSB[РС банк\nlocalhost:8002]
+    MCP -->|fallback| DDG[DuckDuckGo]
+    MCP --> MP[MemPalace MCP\nДолгосрочная память]
+    RS --> LM
+    LM --> U
+```
+
+**Компоненты оболочки:**
+
+| Компонент | Технология | Назначение |
+|-----------|-----------|------------|
+| ИИ-агент | Gemma 4 E4B (Q4_K_M, 6.33 GB) | Оркестрация, объяснения |
+| Inference backend | LM Studio | Локальный запуск LLM |
+| Tool routing | MCP smart-search | Маршрутизация по доменам |
+| РС маркетплейса | ALS + LightGBM Ranker | Персонализация товаров |
+| Долгосрочная память | MemPalace (MCP) | Сохранение профиля |
 
 ---
 
@@ -219,11 +247,11 @@ flowchart TD
 
 ## Ablation Study
 
-| Model                    | Recall@10 |
-| ------------------------ | --------- |
-| ALS Only                 | baseline  |
-| Ranker without ALS score | improved  |
-| Ranker with ALS score    | best      |
+| Model | Recall@10 |
+|-------|-----------|
+| ALS Only | baseline |
+| Ranker without ALS score | improved |
+| Ranker with ALS score | best |
 
 Вывод:
 
@@ -239,17 +267,13 @@ flowchart TD
     B --> C[Temporal Split]
     C --> D[Train Events]
     C --> E[Validation Events]
-
     D --> F[ALS Training]
     F --> G[ALS Candidate Generation]
-
     D --> H[Feature Engineering]
     E --> I[Validation Target]
-
     G --> J[Ranker Dataset]
     H --> J
     I --> J
-
     J --> K[LightGBM Ranker Training]
     K --> L[Offline Evaluation]
     L --> M[MLflow Logging]
@@ -270,8 +294,6 @@ mlflow server \
   --port 5000
 ```
 
----
-
 ### Логируются
 
 * параметры моделей
@@ -286,8 +308,6 @@ mlflow server \
 
 Рекомендательная система развёрнута как FastAPI REST сервис.
 
----
-
 ### Endpoints
 
 #### Healthcheck
@@ -295,8 +315,6 @@ mlflow server \
 ```http
 GET /health
 ```
-
----
 
 #### Recommendations
 
@@ -330,55 +348,204 @@ Response:
 }
 ```
 
----
-
 ### Swagger
 
-```text
-http://localhost:8000/docs
 ```
-
----
-
-## API Deployment Architecture
-
-```mermaid
-flowchart LR
-    A[Client / Frontend] --> B[FastAPI Service]
-    B --> C[ALS Model]
-    B --> D[LightGBM Ranker]
-    B --> E[Inference Assets]
-    C --> F[Candidate Generation]
-    E --> G[Feature Joining]
-    D --> H[Reranking]
-    F --> H
-    G --> H
-    H --> I[Recommendations Response]
+http://localhost:8001/docs
 ```
 
 ---
 
 ## Docker
 
-### Build
+### Build & Run (через скрипт)
 
 ```bash
-docker build -t ecommerce-recsys .
+cd ~/.lmstudio/projects/ecommerce-recsys
+bash scripts/run_docker.sh
 ```
 
-### Run
+### Build вручную
 
 ```bash
-docker run -p 8000:8000 ecommerce-recsys
+docker build -t ecommerce-recsys-api .
 ```
+
+### Run вручную
+
+```bash
+docker run -d --name ecommerce-recsys-container -p 8001:8000 ecommerce-recsys-api
+```
+
+### Проверка
+
+```bash
+curl http://localhost:8001/health
+# {"status":"ok"}
+```
+
+### Логи
+
+```bash
+docker logs ecommerce-recsys-container -f
+```
+
+---
+
+## 🚀 Запуск персонализированной оболочки с ИИ-ассистентом
+
+### Требования
+
+* macOS с Apple Silicon (M1/M2/M3)
+* Docker Desktop
+* LM Studio с моделью `gemma-4-E4B-it-Q4_K_M.gguf`
+* MCP-сервер `smart-search` установлен в LM Studio
+
+---
+
+### Шаг 1 — Запустить Docker Desktop
+
+```
+Spotlight (⌘+Space) → "Docker" → Enter
+Ждать пока иконка кита в menu bar перестанет анимироваться
+```
+
+---
+
+### Шаг 2 — Создать виртуальное окружение (только первый раз)
+
+```bash
+cd ~/.lmstudio/projects/ecommerce-recsys
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+---
+
+### Шаг 3 — Запустить РС маркетплейса
+
+```bash
+cd ~/.lmstudio/projects/ecommerce-recsys
+source .venv/bin/activate
+bash scripts/run_docker.sh
+```
+
+Проверка:
+
+```bash
+curl http://localhost:8001/health
+# ожидаем: {"status":"ok"}
+```
+
+Тест рекомендаций напрямую:
+
+```bash
+curl -X POST http://localhost:8001/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": 257597, "top_k": 5, "n_candidates": 50}'
+```
+
+---
+
+### Шаг 4 — Запустить MCP-сервер (новое окно терминала)
+
+```bash
+cd ~/.lmstudio/extensions/mcp-server/search_server
+source .venv/bin/activate
+pip install ddgs httpx  # только первый раз
+python3 test_integration.py  # проверка маршрутизации
+```
+
+Ожидаемый вывод:
+
+```
+[купить ноутбук] → recsys:ecommerce  domain=ecommerce  conf=0.85
+[посоветуй плейлист] → duckduckgo    domain=music      conf=0.95
+```
+
+---
+
+### Шаг 5 — Запустить LM Studio
+
+```
+1. Открыть LM Studio
+2. Load Model → gemma-4-E4B-it-Q4_K_M.gguf → Load
+3. Убедиться что в Integrations активны:
+   ✅ mcp/smart-search (tools: recommend, duckduckgo_search)
+   ✅ mempalace
+```
+
+---
+
+### Шаг 6 — Системный промпт
+
+Вставить в System Prompt перед началом чата:
+
+```
+You are a personal AI assistant with recommendation and search tools.
+
+RULES:
+- For products, shopping, e-commerce → call recommend
+- For music playlists → call recommend
+- For banking, finance products → call recommend
+- For general knowledge, news, information → call duckduckgo_search
+- Present recommendations naturally as personalized picks
+- If tool returns "source": "ecommerce-recsys" → start response with [РС]
+- If tool returns web results → start response with [Поиск]
+- Answer in the same language as the user
+```
+
+---
+
+### Шаг 7 — Тестовые запросы
+
+```
+# Персонализация по истории (известный пользователь)
+Я пользователь 257597. Порекомендуй товары по моей истории покупок.
+
+# E-commerce запрос
+Хочу купить ноутбук для работы до 80000 рублей.
+
+# Общий вопрос (→ DuckDuckGo)
+Что такое квантовые вычисления?
+```
+
+Мониторинг в реальном времени:
+
+```bash
+docker logs ecommerce-recsys-container -f
+# POST /recommend HTTP/1.1" 200 OK → РС вызвана успешно
+```
+
+---
+
+### Известные пользователи для тестирования
+
+```python
+KNOWN_USER_IDS = [
+    257597, 992329, 111016, 483717,
+    951259, 972639, 810725, 794181,
+    824915, 339335
+]
+```
+
+---
+
+### Устранение неполадок
+
+| Проблема | Решение |
+|----------|---------|
+| `curl: (7) Failed to connect to localhost port 8001` | Запустить `bash scripts/run_docker.sh` |
+| `ModuleNotFoundError: No module named 'ddgs'` | `pip install ddgs` в `.venv` MCP-сервера |
+| Gemma идёт в интернет вместо РС | Проверить системный промпт, перезапустить mcp/smart-search |
+| `422 Unprocessable Entity` | `user_id` должен быть integer, не строка |
+| `no space left on device` | `docker system prune -a --volumes` |
 
 ---
 
 ## Airflow Retraining Pipeline
-
-Реализован автоматический DAG переобучения модели.
-
----
 
 ### DAG Stages
 
@@ -389,8 +556,6 @@ docker run -p 8000:8000 ecommerce-recsys
 5. Обучение Ranker
 6. Offline evaluation
 7. Сохранение артефактов
-
----
 
 ### DAG Visualization
 
@@ -404,8 +569,6 @@ flowchart TD
     F --> G[save_artifacts]
 ```
 
----
-
 ### Schedule
 
 * Weekly retraining
@@ -413,10 +576,6 @@ flowchart TD
 ---
 
 ## Monitoring
-
-Реализован мониторинг inference и retraining pipeline.
-
----
 
 ### API Metrics
 
@@ -427,15 +586,11 @@ flowchart TD
 * `recommendations_returned_total`
 * `inference_errors_total`
 
----
-
 ### Retraining Metrics
 
 * `retrain_runs_total`
 * `retrain_failures_total`
 * `retrain_duration_seconds`
-
----
 
 ### Metrics Endpoint
 
@@ -445,15 +600,28 @@ GET /metrics
 
 ---
 
-## Monitoring Architecture
+## Локальный запуск (без Docker)
 
-```mermaid
-flowchart LR
-    A[FastAPI API] --> B[Metrics Endpoint]
-    C[Retraining Pipeline] --> D[Metrics Exporter]
-    B --> E[Prometheus]
-    D --> E
-    E --> F[Dashboards and Alerts]
+```bash
+git clone <repo_url>
+cd ecommerce-recsys
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.api.main:app --host 0.0.0.0 --port 8001
+```
+
+---
+
+## Полный Retraining вручную
+
+```bash
+python scripts/train_recommender_pipeline.py --stage preprocess
+python scripts/train_recommender_pipeline.py --stage train_als
+python scripts/train_recommender_pipeline.py --stage generate_candidates
+python scripts/train_recommender_pipeline.py --stage train_ranker
+python scripts/train_recommender_pipeline.py --stage evaluate
+python scripts/train_recommender_pipeline.py --stage save_artifacts
 ```
 
 ---
@@ -477,47 +645,16 @@ ecommerce-recsys/
 │   ├── lgbm_ranker.bin
 │   └── inference_assets.pkl
 ├── scripts/
+│   ├── run_docker.sh
+│   ├── run_mlflow.sh
+│   ├── setup_vm.sh
 │   └── train_recommender_pipeline.py
 ├── airflow/
 │   └── dags/
 │       └── retrain_recsys.py
-├── src/
-│   ├── api/
-│   └── inference/
-```
-
----
-
-## Локальный запуск
-
-```bash
-git clone <repo_url>
-cd ecommerce-recsys
-
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
----
-
-## Запуск API
-
-```bash
-uvicorn src.api.main:app --host 0.0.0.0 --port 8000
-```
-
----
-
-## Полный Retraining вручную
-
-```bash
-python scripts/train_recommender_pipeline.py --stage preprocess
-python scripts/train_recommender_pipeline.py --stage train_als
-python scripts/train_recommender_pipeline.py --stage generate_candidates
-python scripts/train_recommender_pipeline.py --stage train_ranker
-python scripts/train_recommender_pipeline.py --stage evaluate
-python scripts/train_recommender_pipeline.py --stage save_artifacts
+└── src/
+    ├── api/
+    └── inference/
 ```
 
 ---
@@ -534,6 +671,9 @@ python scripts/train_recommender_pipeline.py --stage save_artifacts
 * Prometheus
 * MLflow
 * Optuna
+* LM Studio + Gemma 4 E4B
+* MCP (Model Context Protocol)
+* MemPalace
 
 ---
 
@@ -549,7 +689,7 @@ python scripts/train_recommender_pipeline.py --stage save_artifacts
 
 > **Production-ready двухэтапная рекомендательная система**
 >
-> **ALS Candidate Retrieval + LightGBM Ranker Reranking**
+> **ALS Candidate Retrieval + LightGBM Ranker + LLM-агент на базе Gemma 4**
 
 ---
 
@@ -566,6 +706,7 @@ flowchart TD
     G --> H[Dockerization]
     H --> I[Airflow Retraining]
     I --> J[Monitoring]
+    J --> K[LLM-агент оболочка]
 ```
 
 ---
@@ -575,6 +716,3 @@ flowchart TD
 **Andrej Moldovan**
 
 Рекомендации товаров в электронной коммерции
-
-```
-```
