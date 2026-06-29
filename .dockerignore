@@ -5,3 +5,12 @@ mlflow/mlruns
 mlflow/mlflow.db
 notebooks
 data/raw
+data/processed
+data/
+models/
+*.bin
+*.pkl
+*.parquet
+*.csv
+mlflow/
+.git/
