@@ -521,15 +521,16 @@ docker logs ecommerce-recsys-container -f
 
 ---
 
-### Известные пользователи для тестирования
+### Тестирование
 
-```python
-KNOWN_USER_IDS = [
-    257597, 992329, 111016, 483717,
-    951259, 972639, 810725, 794181,
-    824915, 339335
-]
-```
+Для тестирования используйте `user_id` из вашего датасета.
+Передайте любой существующий ID пользователя в запросе:
+
+\```bash
+curl -X POST http://localhost:8001/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": YOUR_USER_ID, "top_k": 5, "n_candidates": 50}'
+\```
 
 ---
 
